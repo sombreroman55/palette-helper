@@ -1,8 +1,8 @@
-from PIL import Image
+from collections import Counter
 import os
 import math
 import sys
-import utils
+from PIL import Image
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import \
@@ -11,11 +11,22 @@ from PyQt6.QtWidgets import \
     QSlider
 
 
+def col2hex(ct):
+    return '#{:02x}{:02x}{:02x}'.format(*ct)
+
+
+def colorDistance(color1, color2):
+    # Discard alpha channel
+    r1, g1, b1, _ = color1
+    r2, g2, b2, _ = color2
+    return math.sqrt((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2)
+
+
 class ColorSquare(QLabel):
     def __init__(self, rgba_hex):
         super().__init__()
-        self.rgba = utils.col2hex(rgba_hex)
-        self.negative = utils.col2hex(
+        self.rgba = col2hex(rgba_hex)
+        self.negative = col2hex(
                 tuple(~component & 0xFF for component in rgba_hex))
         self.timer = QTimer()
         self.is_copying = False
@@ -94,7 +105,12 @@ class PaletteParameters(QWidget):
 
         self.image_label = QLabel("Original image:")
         self.original_image = QLabel()
-        self.original_image.setPixmap(QPixmap(self.image_path))
+        pixmap = QPixmap(self.image_path)
+
+        self.original_image.setPixmap(
+                pixmap.scaled(
+                    self.original_image.size(),
+                    Qt.AspectRatioMode.KeepAspectRatio))
 
         layout.addWidget(self.color_label)
         layout.addWidget(self.color_slider)
@@ -108,7 +124,7 @@ class PaletteParameters(QWidget):
         layout.setStretchFactor(self.distance_label, 1)
         layout.setStretchFactor(self.distance_slider, 1)
         layout.setStretchFactor(self.image_label, 1)
-        layout.setStretchFactor(self.original_image, 2)
+        layout.setStretchFactor(self.original_image, 5)
 
         self.setLayout(layout)
 
@@ -128,16 +144,39 @@ class PaletteTabView(QWidget):
         self.min_distance = 25
         self.num_colors = 16
         self.alpha_cutoff = 200
-        self.extractAllColors()
+        self.colors = {}
+        self.precalculateColors()
         self.initUI()
 
-    def extractAllColors(self):
+    def precalculateColors(self):
         image = Image.open(self.image_path)
         image = image.convert('RGBA')
-        self.colors = list(image.getdata())
+        colors = list(image.getdata())
+        color_count = Counter(colors)
+        sorted_colors = color_count.most_common()
+        for i in range(1, 37):
+            for j in range(0, 51):
+                most_frequent_colors = []
+                selected_colors = []
 
-    def getColors(self):
-        return self.colors
+                for color, _ in sorted_colors:
+                    # Ignore overly transparent colors
+                    if color[3] <= self.alpha_cutoff:
+                        continue
+                    is_similar = False
+                    for selected in selected_colors:
+                        if colorDistance(color, selected) <= j:
+                            is_similar = True
+                            break
+
+                    if not is_similar:
+                        most_frequent_colors.append(color)
+                        selected_colors.append(color)
+
+                    if len(most_frequent_colors) == i:
+                        break
+
+                self.colors[(i, j)] = most_frequent_colors
 
     def updateMinDistance(self, distance):
         self.min_distance = distance
@@ -168,12 +207,9 @@ class PaletteTabView(QWidget):
         layout = self.grid_view.layout()
         for i in reversed(range(layout.count())):
             layout.itemAt(i).widget().setParent(None)
-        most_used = utils.mostCommonColors(self.colors,
-                                           self.num_colors,
-                                           self.min_distance,
-                                           self.alpha_cutoff)
+        colors = self.colors[(self.num_colors, self.min_distance)]
         rows = math.ceil(math.sqrt(self.num_colors))
-        for i, color in enumerate(most_used):
+        for i, color in enumerate(colors):
             square = ColorSquare(color[:3])
             layout.addWidget(square, i // rows, i % rows)
 
