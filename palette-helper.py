@@ -99,7 +99,7 @@ class PaletteParameters(QWidget):
 
         self.distance_label = QLabel(f"Min distance: {self.min_distance}")
         self.distance_slider = QSlider(Qt.Orientation.Horizontal)
-        self.distance_slider.setRange(0, 50)
+        self.distance_slider.setRange(0, 40)
         self.distance_slider.setValue(self.min_distance)
         self.distance_slider.valueChanged.connect(self.distanceSliderChanged)
 
@@ -148,6 +148,7 @@ class PaletteTabView(QWidget):
         self.precalculateColors()
         self.initUI()
 
+    # PERF: This is slow
     def precalculateColors(self):
         image = Image.open(self.image_path)
         image = image.convert('RGBA')
@@ -155,7 +156,7 @@ class PaletteTabView(QWidget):
         color_count = Counter(colors)
         sorted_colors = color_count.most_common()
         for i in range(1, 37):
-            for j in range(0, 51):
+            for j in range(0, 41):
                 most_frequent_colors = []
                 selected_colors = []
 
@@ -196,7 +197,7 @@ class PaletteTabView(QWidget):
         layout.addWidget(self.parameters)
         layout.addWidget(self.grid_view)
         layout.setStretchFactor(self.parameters, 1)
-        layout.setStretchFactor(self.grid_view, 3)
+        layout.setStretchFactor(self.grid_view, 5)
 
         self.parameters.colors_changed.connect(self.updateNumColors)
         self.parameters.distance_changed.connect(self.updateMinDistance)
