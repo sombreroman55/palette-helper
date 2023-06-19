@@ -10,10 +10,6 @@ from PyQt6.QtWidgets import \
     QHBoxLayout, QVBoxLayout, QPushButton, QFileDialog, QGridLayout, \
     QSlider
 
-# TODO: Add UI to assign colors to a scheme. Start with kitty themes
-#       Since they are an easy 16 color palette that  we can work with
-#       We can expand to more if we want to for emacs or vim or whatever
-
 
 class ColorSquare(QLabel):
     def __init__(self, rgba_hex):
@@ -86,7 +82,7 @@ class PaletteParameters(QWidget):
         layout = QVBoxLayout()
         self.color_label = QLabel(f"Colors: {self.num_colors}")
         self.color_slider = QSlider(Qt.Orientation.Horizontal)
-        self.color_slider.setRange(1, 40)
+        self.color_slider.setRange(1, 36)
         self.color_slider.setValue(self.num_colors)
         self.color_slider.valueChanged.connect(self.colorSliderChanged)
 
@@ -96,7 +92,7 @@ class PaletteParameters(QWidget):
         self.distance_slider.setValue(self.min_distance)
         self.distance_slider.valueChanged.connect(self.distanceSliderChanged)
 
-        self.image_label = QLabel("Original image")
+        self.image_label = QLabel("Original image:")
         self.original_image = QLabel()
         self.original_image.setPixmap(QPixmap(self.image_path))
 
