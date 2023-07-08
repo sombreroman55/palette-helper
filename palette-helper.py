@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import \
     QHBoxLayout, QVBoxLayout, QPushButton, QFileDialog, QGridLayout, \
     QSlider
 
+import qdarktheme
+
 
 def col2hex(ct):
     return '#{:02x}{:02x}{:02x}'.format(*ct)
@@ -276,5 +278,6 @@ class PaletteAnalyzer(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    qdarktheme.setup_theme()
     analyzer = PaletteAnalyzer()
     sys.exit(app.exec())
